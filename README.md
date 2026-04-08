@@ -1,0 +1,34 @@
+# Nexo TKT API
+
+Este directorio contiene el backend principal del proyecto Gestión TKT.
+
+## Recomendación técnica
+- Node.js
+- TypeScript
+- PostgreSQL
+- Zod
+- Prisma para migraciones y acceso a datos
+- JWT con access token + refresh token
+
+## Decisiones iniciales
+- La base de datos de desarrollo se levantará con Docker.
+- El esquema de base de datos se gestionará con **migraciones** en el backend.
+- No se mantendrá un `schema.sql` manual como fuente principal.
+
+## Estructura inicial sugerida
+- `migrations/` → historial de migraciones
+- `src/` → código fuente del backend
+- `prisma/` o equivalente → esquema y migraciones si se usa Prisma
+
+## Estado actual
+- Git inicializado
+- pnpm + Node.js + TypeScript configurado
+- Prisma inicializado
+- Docker Compose listo para PostgreSQL local
+- Base para autenticación con JWT configurada
+
+## Autenticación base
+- `access token` para autorización API
+- `refresh token` en cookie `httpOnly`
+- invalidación del refresh token al hacer logout
+- rotación del refresh token al refrescar sesión

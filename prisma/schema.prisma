@@ -1,0 +1,398 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CompanyStatus {
+  active
+  inactive
+}
+
+enum ProjectStatus {
+  active
+  inactive
+}
+
+enum TicketPriority {
+  low
+  medium
+  high
+  critical
+}
+
+enum EstimationStatus {
+  pending
+  approved
+  rejected
+  adjustment_requested
+}
+
+enum EstimationDecision {
+  approved
+  rejected
+  adjustment_requested
+}
+
+enum WorkType {
+  development
+  support
+  adjustment
+}
+
+enum IterationStatus {
+  open
+  resolved
+}
+
+enum CommentType {
+  general
+  observation
+  response
+  validation
+}
+
+enum NotificationType {
+  assignment
+  estimation_decision
+  deployed_dev
+  observed_again
+  closed
+}
+
+enum NotificationChannel {
+  email
+}
+
+enum NotificationStatus {
+  pending
+  sent
+  failed
+}
+
+enum RefreshTokenStatus {
+  active
+  revoked
+  consumed
+}
+
+model Role {
+  id              String           @id @default(uuid()) @db.Uuid
+  name            String           @unique @db.VarChar(50)
+  description     String?          @db.VarChar(255)
+  users           User[]
+  rolePermissions RolePermission[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model Permission {
+  id              String           @id @default(uuid()) @db.Uuid
+  code            String           @unique @db.VarChar(100)
+  name            String           @db.VarChar(100)
+  description     String?          @db.VarChar(255)
+  rolePermissions RolePermission[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model RolePermission {
+  id           String     @id @default(uuid()) @db.Uuid
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+model User {
+  id                  String                       @id @default(uuid()) @db.Uuid
+  fullName            String                       @db.VarChar(150)
+  email               String                       @unique @db.VarChar(150)
+  passwordHash        String                       @db.VarChar(255)
+  roleId              String                       @db.Uuid
+  isActive            Boolean                      @default(true)
+  role                Role                         @relation(fields: [roleId], references: [id])
+  companiesCreated    Company[]                    @relation("CompanyCreatedBy")
+  projectsCreated     Project[]                    @relation("ProjectCreatedBy")
+  ticketsCreated      Ticket[]                     @relation("TicketCreatedBy")
+  ticketsAssigned     Ticket[]                     @relation("TicketAssignedTo")
+  ticketAssignmentsBy TicketAssignment[]           @relation("TicketAssignedBy")
+  ticketAssignmentsTo TicketAssignment[]           @relation("TicketAssignedToUser")
+  estimations         TicketEstimation[]
+  estimationApprovals TicketEstimationApproval[]
+  worklogs            TicketWorklog[]
+  iterationsOpened    TicketIteration[]
+  comments            TicketComment[]
+  attachments         TicketAttachment[]
+  statusChanges       TicketStatusHistory[]
+  notifications       Notification[]
+  refreshTokens       RefreshToken[]
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+}
+
+model Company {
+  id          String        @id @default(uuid()) @db.Uuid
+  name        String        @db.VarChar(150)
+  taxId       String?       @db.VarChar(100)
+  mainContact String?       @db.VarChar(150)
+  status      CompanyStatus @default(active)
+  createdById String        @db.Uuid
+  createdBy   User          @relation("CompanyCreatedBy", fields: [createdById], references: [id])
+  projects    Project[]
+  tickets     Ticket[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Project {
+  id          String        @id @default(uuid()) @db.Uuid
+  companyId   String        @db.Uuid
+  name        String        @db.VarChar(150)
+  description String?
+  status      ProjectStatus @default(active)
+  createdById String        @db.Uuid
+  company     Company       @relation(fields: [companyId], references: [id])
+  createdBy   User          @relation("ProjectCreatedBy", fields: [createdById], references: [id])
+  tickets     Ticket[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([companyId])
+}
+
+model TicketType {
+  id                  String   @id @default(uuid()) @db.Uuid
+  code                String   @unique @db.VarChar(80)
+  name                String   @db.VarChar(120)
+  requiresDiagnosis   Boolean  @default(false)
+  requiresSolution    Boolean  @default(false)
+  requiresFeaturesLog Boolean  @default(false)
+  tickets             Ticket[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model TicketStatus {
+  id        String               @id @default(uuid()) @db.Uuid
+  code      String               @unique @db.VarChar(80)
+  name      String               @db.VarChar(120)
+  tickets   Ticket[]
+  oldIn     TicketStatusHistory[] @relation("OldStatus")
+  newIn     TicketStatusHistory[] @relation("NewStatus")
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+}
+
+model Ticket {
+  id                String                @id @default(uuid()) @db.Uuid
+  code              String                @unique @db.VarChar(40)
+  companyId         String                @db.Uuid
+  projectId         String                @db.Uuid
+  ticketTypeId      String                @db.Uuid
+  title             String                @db.VarChar(160)
+  description       String
+  priority          TicketPriority        @default(medium)
+  statusId          String                @db.Uuid
+  createdById       String                @db.Uuid
+  assignedToId      String?               @db.Uuid
+  currentIteration  Int                   @default(1)
+  parentTicketId    String?               @db.Uuid
+  company           Company               @relation(fields: [companyId], references: [id])
+  project           Project               @relation(fields: [projectId], references: [id])
+  ticketType        TicketType            @relation(fields: [ticketTypeId], references: [id])
+  status            TicketStatus          @relation(fields: [statusId], references: [id])
+  createdBy         User                  @relation("TicketCreatedBy", fields: [createdById], references: [id])
+  assignedTo        User?                 @relation("TicketAssignedTo", fields: [assignedToId], references: [id])
+  parentTicket      Ticket?               @relation("TicketParent", fields: [parentTicketId], references: [id])
+  childTickets      Ticket[]              @relation("TicketParent")
+  assignments       TicketAssignment[]
+  estimations       TicketEstimation[]
+  worklogs          TicketWorklog[]
+  iterations        TicketIteration[]
+  comments          TicketComment[]
+  attachments       TicketAttachment[]
+  statusHistory     TicketStatusHistory[]
+  notifications     Notification[]
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  closedAt          DateTime?
+
+  @@index([companyId])
+  @@index([projectId])
+  @@index([statusId])
+  @@index([createdById])
+  @@index([assignedToId])
+}
+
+model TicketAssignment {
+  id           String   @id @default(uuid()) @db.Uuid
+  ticketId     String   @db.Uuid
+  assignedById String   @db.Uuid
+  assignedToId String   @db.Uuid
+  comment      String?
+  ticket       Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  assignedBy   User     @relation("TicketAssignedBy", fields: [assignedById], references: [id])
+  assignedTo   User     @relation("TicketAssignedToUser", fields: [assignedToId], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+model TicketEstimation {
+  id             String                     @id @default(uuid()) @db.Uuid
+  ticketId       String                     @db.Uuid
+  developerId    String                     @db.Uuid
+  estimatedHours Decimal                    @db.Decimal(10, 2)
+  observation    String?
+  status         EstimationStatus           @default(pending)
+  ticket         Ticket                     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  developer      User                       @relation(fields: [developerId], references: [id])
+  approvals      TicketEstimationApproval[]
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+
+  @@index([ticketId])
+}
+
+model TicketEstimationApproval {
+  id                 String             @id @default(uuid()) @db.Uuid
+  ticketEstimationId String             @db.Uuid
+  approvedById       String             @db.Uuid
+  decision           EstimationDecision
+  comment            String?
+  ticketEstimation   TicketEstimation   @relation(fields: [ticketEstimationId], references: [id], onDelete: Cascade)
+  approvedBy         User               @relation(fields: [approvedById], references: [id])
+  createdAt          DateTime           @default(now())
+
+  @@index([ticketEstimationId])
+}
+
+model TicketWorklog {
+  id            String   @id @default(uuid()) @db.Uuid
+  ticketId      String   @db.Uuid
+  developerId   String   @db.Uuid
+  workType      WorkType
+  timeSpentHours Decimal @db.Decimal(10, 2)
+  diagnosis     String?
+  solution      String?
+  featuresAdded String?
+  deployedToDev Boolean  @default(false)
+  ticket        Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  developer     User     @relation(fields: [developerId], references: [id])
+  attachments   TicketAttachment[]
+  createdAt     DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+model TicketIteration {
+  id              String          @id @default(uuid()) @db.Uuid
+  ticketId        String          @db.Uuid
+  iterationNumber Int
+  openedById      String          @db.Uuid
+  reason          String
+  status          IterationStatus @default(open)
+  ticket          Ticket          @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  openedBy        User            @relation(fields: [openedById], references: [id])
+  comments        TicketComment[]
+  createdAt       DateTime        @default(now())
+  closedAt        DateTime?
+
+  @@unique([ticketId, iterationNumber])
+  @@index([ticketId])
+}
+
+model TicketComment {
+  id          String          @id @default(uuid()) @db.Uuid
+  ticketId    String          @db.Uuid
+  iterationId String?         @db.Uuid
+  userId      String          @db.Uuid
+  commentType CommentType
+  content     String
+  ticket      Ticket          @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  iteration   TicketIteration? @relation(fields: [iterationId], references: [id], onDelete: SetNull)
+  user        User            @relation(fields: [userId], references: [id])
+  attachments TicketAttachment[]
+  createdAt   DateTime        @default(now())
+
+  @@index([ticketId])
+}
+
+model TicketAttachment {
+  id         String         @id @default(uuid()) @db.Uuid
+  ticketId   String         @db.Uuid
+  uploadedById String       @db.Uuid
+  commentId  String?        @db.Uuid
+  worklogId  String?        @db.Uuid
+  fileName   String         @db.VarChar(255)
+  filePath   String         @db.VarChar(500)
+  fileType   String         @db.VarChar(120)
+  fileSize   Int
+  ticket     Ticket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  uploadedBy User           @relation(fields: [uploadedById], references: [id])
+  comment    TicketComment? @relation(fields: [commentId], references: [id], onDelete: SetNull)
+  worklog    TicketWorklog? @relation(fields: [worklogId], references: [id], onDelete: SetNull)
+  createdAt  DateTime       @default(now())
+
+  @@index([ticketId])
+}
+
+model TicketStatusHistory {
+  id          String       @id @default(uuid()) @db.Uuid
+  ticketId    String       @db.Uuid
+  oldStatusId String?      @db.Uuid
+  newStatusId String       @db.Uuid
+  changedById String       @db.Uuid
+  comment     String?
+  ticket      Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  oldStatus   TicketStatus? @relation("OldStatus", fields: [oldStatusId], references: [id], onDelete: SetNull)
+  newStatus   TicketStatus @relation("NewStatus", fields: [newStatusId], references: [id])
+  changedBy   User         @relation(fields: [changedById], references: [id])
+  createdAt   DateTime     @default(now())
+
+  @@index([ticketId])
+}
+
+model Notification {
+  id        String              @id @default(uuid()) @db.Uuid
+  ticketId  String?             @db.Uuid
+  userId    String              @db.Uuid
+  type      NotificationType
+  channel   NotificationChannel @default(email)
+  subject   String              @db.VarChar(200)
+  message   String
+  status    NotificationStatus  @default(pending)
+  sentAt    DateTime?
+  ticket    Ticket?             @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+  user      User                @relation(fields: [userId], references: [id])
+  createdAt DateTime            @default(now())
+
+  @@index([ticketId])
+  @@index([userId])
+}
+
+model RefreshToken {
+  id                String             @id @default(uuid()) @db.Uuid
+  tokenId           String             @unique @db.Uuid
+  userId            String             @db.Uuid
+  tokenHash         String             @db.VarChar(255)
+  status            RefreshTokenStatus @default(active)
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  replacedByTokenId String?            @db.Uuid
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}

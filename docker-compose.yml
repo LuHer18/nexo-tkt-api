@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: gestion_tkt_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gestion_tkt_db
+      POSTGRES_USER: gestion_tkt_user
+      POSTGRES_PASSWORD: gestion_tkt_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
