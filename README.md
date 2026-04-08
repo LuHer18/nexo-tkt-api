@@ -32,3 +32,21 @@ Este directorio contiene el backend principal del proyecto Gestión TKT.
 - `refresh token` en cookie `httpOnly`
 - invalidación del refresh token al hacer logout
 - rotación del refresh token al refrescar sesión
+
+## Endpoints base disponibles
+- `POST /api/auth/login`
+- `POST /api/auth/refresh`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+
+## Seed inicial
+Se incluye un seed base con roles, permisos y un usuario demo:
+
+- email: `leader@nexotkt.local`
+- password: `Admin12345*`
+
+Ejecutar con:
+
+```bash
+pnpm db:seed
+```

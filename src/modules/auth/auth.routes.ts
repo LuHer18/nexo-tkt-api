@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { env } from "../../config/env";
+import { requireAuth } from "./auth.middleware";
 import { authService } from "./auth.service";
 import { loginSchema } from "./auth.schemas";
 
@@ -75,4 +76,15 @@ authRouter.post("/logout", async (req, res) => {
   return res.status(200).json({
     message: "Logout exitoso",
   });
+});
+
+authRouter.get("/me", requireAuth, async (req, res) => {
+  try {
+    const user = await authService.getCurrentUser(req.auth!.sub);
+
+    return res.status(200).json({ user });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo obtener el usuario";
+    return res.status(404).json({ message });
+  }
 });
