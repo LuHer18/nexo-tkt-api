@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { randomUUID } from "node:crypto";
+import { randomUUID } from "crypto";
 
 import { env } from "../../../../shared/config/env";
 import { AppError } from "../../../../shared/domain/errors/app-error";

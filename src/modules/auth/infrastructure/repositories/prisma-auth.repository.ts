@@ -105,7 +105,7 @@ export class PrismaUserReader implements UserReader {
       fullName: user.fullName,
       email: user.email,
       role: user.role.name,
-      permissions: user.role.rolePermissions.map((item) => item.permission.code),
+      permissions: user.role.rolePermissions.map((item: { permission: { code: string } }) => item.permission.code),
     };
   }
 }
