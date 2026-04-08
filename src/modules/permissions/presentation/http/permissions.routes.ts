@@ -1,7 +1,7 @@
 import { Router } from "express";
 
-import { requireAuth } from "../auth/auth.middleware";
-import { requirePermissions } from "../auth/rbac.middleware";
+import { requireAuth } from "../../../../shared/presentation/http/middlewares/require-auth";
+import { requirePermissions } from "../../../../shared/presentation/http/middlewares/require-permissions";
 
 export const permissionsRouter = Router();
 

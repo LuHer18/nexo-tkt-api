@@ -26,6 +26,15 @@ Este directorio contiene el backend principal del proyecto Gestión TKT.
 - Prisma inicializado
 - Docker Compose listo para PostgreSQL local
 - Base para autenticación con JWT configurada
+- Primera base de Clean Architecture aplicada
+
+## Estructura actual
+- `src/app` → bootstrap de aplicación
+- `src/shared` → configuración, errores, middlewares y adaptadores compartidos
+- `src/modules/*/domain` → contratos y tipos del dominio
+- `src/modules/*/application` → casos de uso
+- `src/modules/*/infrastructure` → implementación con Prisma
+- `src/modules/*/presentation` → rutas y controladores HTTP
 
 ## Autenticación base
 - `access token` para autorización API
