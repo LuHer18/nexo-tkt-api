@@ -47,6 +47,31 @@ Este directorio contiene el backend principal del proyecto Gestión TKT.
 - `POST /api/auth/refresh`
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
+- `GET /api/companies`
+- `POST /api/companies`
+- `GET /api/projects`
+- `POST /api/projects`
+
+## Paginación
+Los endpoints de listado soportan:
+
+- `page`
+- `pageSize`
+
+Y devuelven:
+
+- `data`
+- `meta.page`
+- `meta.pageSize`
+- `meta.total`
+- `meta.totalPages`
+
+El orden por defecto en listados es `createdAt desc`.
+
+## Fechas y zona horaria
+- Las fechas se almacenan en **UTC** en la base de datos.
+- Las respuestas del backend devuelven fechas en formato ISO estándar.
+- La conversión a hora local debe hacerse en el frontend según la zona horaria del usuario.
 
 ## Seed inicial
 Se incluye un seed base con roles, permisos y un usuario demo:
