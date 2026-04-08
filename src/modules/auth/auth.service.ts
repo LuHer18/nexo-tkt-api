@@ -1,35 +1,9 @@
 import bcrypt from "bcryptjs";
-import jwt, { type SignOptions } from "jsonwebtoken";
 import { randomUUID } from "node:crypto";
 
-import { env } from "../../config/env";
 import { prisma } from "../../lib/prisma";
-
-type AccessPayload = {
-  sub: string;
-  email: string;
-  role: string;
-};
-
-type RefreshPayload = {
-  sub: string;
-  jti: string;
-  type: "refresh";
-};
-
-const parseTtlToMs = (days: number) => days * 24 * 60 * 60 * 1000;
-
-const signAccessToken = (payload: AccessPayload) => {
-  return jwt.sign(payload, env.ACCESS_TOKEN_SECRET, {
-    expiresIn: env.ACCESS_TOKEN_TTL as SignOptions["expiresIn"],
-  });
-};
-
-const signRefreshToken = (payload: RefreshPayload) => {
-  return jwt.sign(payload, env.REFRESH_TOKEN_SECRET, {
-    expiresIn: `${env.REFRESH_TOKEN_TTL_DAYS}d`,
-  });
-};
+import { env } from "../../config/env";
+import { parseTtlToMs, signAccessToken, signRefreshToken, verifyRefreshToken } from "./auth.utils";
 
 const hashToken = async (token: string) => bcrypt.hash(token, 10);
 
@@ -86,7 +60,7 @@ export const authService = {
   },
 
   async refresh(rawToken: string) {
-    const payload = jwt.verify(rawToken, env.REFRESH_TOKEN_SECRET) as RefreshPayload;
+    const payload = verifyRefreshToken(rawToken);
 
     if (payload.type !== "refresh") {
       throw new Error("Refresh token inválido");
@@ -157,7 +131,7 @@ export const authService = {
   },
 
   async logout(rawToken: string) {
-    const payload = jwt.verify(rawToken, env.REFRESH_TOKEN_SECRET) as RefreshPayload;
+    const payload = verifyRefreshToken(rawToken);
 
     await prisma.refreshToken.updateMany({
       where: {
@@ -169,5 +143,34 @@ export const authService = {
         revokedAt: new Date(),
       },
     });
+  },
+
+  async getCurrentUser(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        role: {
+          include: {
+            rolePermissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user || !user.isActive) {
+      throw new Error("Usuario no encontrado");
+    }
+
+    return {
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      role: user.role.name,
+      permissions: user.role.rolePermissions.map((item) => item.permission.code),
+    };
   },
 };
