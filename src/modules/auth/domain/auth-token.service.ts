@@ -1,6 +1,6 @@
 import jwt, { type SignOptions } from "jsonwebtoken";
 
-import { env } from "../../config/env";
+import { env } from "../../../shared/config/env";
 import type { JwtPayload, RefreshPayload } from "./auth.types";
 
 export const parseTtlToMs = (days: number) => days * 24 * 60 * 60 * 1000;
@@ -17,10 +17,6 @@ export const signRefreshToken = (payload: RefreshPayload) => {
   });
 };
 
-export const verifyAccessToken = (token: string) => {
-  return jwt.verify(token, env.ACCESS_TOKEN_SECRET) as JwtPayload;
-};
+export const verifyAccessToken = (token: string) => jwt.verify(token, env.ACCESS_TOKEN_SECRET) as JwtPayload;
 
-export const verifyRefreshToken = (token: string) => {
-  return jwt.verify(token, env.REFRESH_TOKEN_SECRET) as RefreshPayload;
-};
+export const verifyRefreshToken = (token: string) => jwt.verify(token, env.REFRESH_TOKEN_SECRET) as RefreshPayload;
