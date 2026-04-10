@@ -55,6 +55,10 @@ Este directorio contiene el backend principal del proyecto Gestión TKT.
 - `GET /api/ticket-catalogs/statuses`
 - `GET /api/tickets`
 - `POST /api/tickets`
+- `POST /api/tickets/:ticketId/assign`
+- `POST /api/tickets/:ticketId/reassign`
+- `POST /api/tickets/:ticketId/estimations`
+- `POST /api/tickets/:ticketId/estimations/:estimationId/decision`
 
 ## Paginación
 Los endpoints de listado soportan:
@@ -88,6 +92,15 @@ Se incluye un seed base con roles, permisos y un usuario demo:
 
 - email: `leader@nexotkt.local`
 - password: `Admin12345*`
+
+Usuarios demo adicionales:
+- `pm@nexotkt.local`
+- `cto@nexotkt.local`
+- `qa@nexotkt.local`
+- `dev@nexotkt.local`
+
+Todos usan la contraseña:
+- `Admin12345*`
 
 Ejecutar con:
 

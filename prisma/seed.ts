@@ -166,6 +166,10 @@ async function main() {
   }
 
   const leaderRole = dbRoles.find((role) => role.name === "leader");
+  const pmRole = dbRoles.find((role) => role.name === "pm");
+  const ctoRole = dbRoles.find((role) => role.name === "cto");
+  const qaRole = dbRoles.find((role) => role.name === "qa");
+  const developerRole = dbRoles.find((role) => role.name === "developer");
 
   if (leaderRole) {
     await prisma.user.upsert({
@@ -180,6 +184,62 @@ async function main() {
         email: "leader@nexotkt.local",
         passwordHash: await bcrypt.hash("Admin12345*", 10),
         roleId: leaderRole.id,
+        isActive: true,
+      },
+    });
+  }
+
+  if (pmRole) {
+    await prisma.user.upsert({
+      where: { email: "pm@nexotkt.local" },
+      update: { fullName: "PM Demo", roleId: pmRole.id, isActive: true },
+      create: {
+        fullName: "PM Demo",
+        email: "pm@nexotkt.local",
+        passwordHash: await bcrypt.hash("Admin12345*", 10),
+        roleId: pmRole.id,
+        isActive: true,
+      },
+    });
+  }
+
+  if (ctoRole) {
+    await prisma.user.upsert({
+      where: { email: "cto@nexotkt.local" },
+      update: { fullName: "CTO Demo", roleId: ctoRole.id, isActive: true },
+      create: {
+        fullName: "CTO Demo",
+        email: "cto@nexotkt.local",
+        passwordHash: await bcrypt.hash("Admin12345*", 10),
+        roleId: ctoRole.id,
+        isActive: true,
+      },
+    });
+  }
+
+  if (qaRole) {
+    await prisma.user.upsert({
+      where: { email: "qa@nexotkt.local" },
+      update: { fullName: "QA Demo", roleId: qaRole.id, isActive: true },
+      create: {
+        fullName: "QA Demo",
+        email: "qa@nexotkt.local",
+        passwordHash: await bcrypt.hash("Admin12345*", 10),
+        roleId: qaRole.id,
+        isActive: true,
+      },
+    });
+  }
+
+  if (developerRole) {
+    await prisma.user.upsert({
+      where: { email: "dev@nexotkt.local" },
+      update: { fullName: "Developer Demo", roleId: developerRole.id, isActive: true },
+      create: {
+        fullName: "Developer Demo",
+        email: "dev@nexotkt.local",
+        passwordHash: await bcrypt.hash("Admin12345*", 10),
+        roleId: developerRole.id,
         isActive: true,
       },
     });

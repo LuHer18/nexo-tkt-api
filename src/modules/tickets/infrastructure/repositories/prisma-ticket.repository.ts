@@ -1,7 +1,7 @@
 import { prisma } from "../../../../shared/infrastructure/database/prisma/client";
 import type { PaginatedResult, PaginationParams } from "../../../../shared/domain/pagination/pagination.types";
-import type { OriginTicketLookup, TicketRepository, TicketStatusLookup } from "../../domain/ticket.repository";
-import type { CreateTicketInput, Ticket } from "../../domain/ticket.types";
+import type { OriginTicketLookup, TicketAssigneeLookup, TicketEstimationLookup, TicketRepository, TicketStatusLookup, UserRoleLookup } from "../../domain/ticket.repository";
+import type { CreateEstimationDecisionInput, CreateTicketAssignmentInput, CreateTicketEstimationInput, CreateTicketInput, Ticket, TicketAssignment, TicketEstimation, TicketEstimationApproval } from "../../domain/ticket.types";
 
 const mapTicket = (ticket: {
   id: string;
@@ -51,6 +51,58 @@ const mapTicket = (ticket: {
   createdAt: ticket.createdAt,
   updatedAt: ticket.updatedAt,
   closedAt: ticket.closedAt,
+});
+
+const mapAssignment = (assignment: {
+  id: string;
+  ticketId: string;
+  assignedById: string;
+  assignedToId: string;
+  comment: string | null;
+  createdAt: Date;
+}): TicketAssignment => ({
+  id: assignment.id,
+  ticketId: assignment.ticketId,
+  assignedById: assignment.assignedById,
+  assignedToId: assignment.assignedToId,
+  comment: assignment.comment,
+  createdAt: assignment.createdAt,
+});
+
+const mapEstimation = (estimation: {
+  id: string;
+  ticketId: string;
+  developerId: string;
+  estimatedHours: { toNumber(): number };
+  observation: string | null;
+  status: "pending" | "approved" | "rejected" | "adjustment_requested";
+  createdAt: Date;
+  updatedAt: Date;
+}): TicketEstimation => ({
+  id: estimation.id,
+  ticketId: estimation.ticketId,
+  developerId: estimation.developerId,
+  estimatedHours: estimation.estimatedHours.toNumber(),
+  observation: estimation.observation,
+  status: estimation.status,
+  createdAt: estimation.createdAt,
+  updatedAt: estimation.updatedAt,
+});
+
+const mapEstimationApproval = (approval: {
+  id: string;
+  ticketEstimationId: string;
+  approvedById: string;
+  decision: "approved" | "rejected" | "adjustment_requested";
+  comment: string | null;
+  createdAt: Date;
+}): TicketEstimationApproval => ({
+  id: approval.id,
+  ticketEstimationId: approval.ticketEstimationId,
+  approvedById: approval.approvedById,
+  decision: approval.decision,
+  comment: approval.comment,
+  createdAt: approval.createdAt,
 });
 
 export class PrismaTicketRepository implements TicketRepository {
@@ -152,6 +204,107 @@ export class PrismaTicketRepository implements TicketRepository {
     return prisma.ticket.findUnique({
       where: { id: ticketId },
       select: { id: true, conformityApprovedAt: true },
+    });
+  }
+
+  async findTicketAssignee(ticketId: string): Promise<TicketAssigneeLookup | null> {
+    return prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { id: true, assignedToId: true, statusId: true },
+    });
+  }
+
+  async findUserRole(userId: string): Promise<UserRoleLookup | null> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        isActive: true,
+        role: { select: { name: true } },
+      },
+    });
+
+    if (!user) return null;
+
+    return {
+      id: user.id,
+      isActive: user.isActive,
+      role: user.role.name,
+    };
+  }
+
+  async createAssignment(input: CreateTicketAssignmentInput): Promise<TicketAssignment> {
+    const assignment = await prisma.ticketAssignment.create({
+      data: {
+        ticketId: input.ticketId,
+        assignedById: input.assignedById,
+        assignedToId: input.assignedToId,
+        comment: input.comment,
+      },
+    });
+
+    return mapAssignment(assignment);
+  }
+
+  async updateTicketAssignment(input: { ticketId: string; assignedToId: string; statusId?: string }): Promise<void> {
+    await prisma.ticket.update({
+      where: { id: input.ticketId },
+      data: {
+        assignedToId: input.assignedToId,
+        statusId: input.statusId,
+      },
+    });
+  }
+
+  async createStatusHistory(input: { ticketId: string; oldStatusId?: string | null; newStatusId: string; changedById: string; comment?: string }): Promise<void> {
+    await prisma.ticketStatusHistory.create({
+      data: {
+        ticketId: input.ticketId,
+        oldStatusId: input.oldStatusId,
+        newStatusId: input.newStatusId,
+        changedById: input.changedById,
+        comment: input.comment,
+      },
+    });
+  }
+
+  async createEstimation(input: CreateTicketEstimationInput): Promise<TicketEstimation> {
+    const estimation = await prisma.ticketEstimation.create({
+      data: {
+        ticketId: input.ticketId,
+        developerId: input.developerId,
+        estimatedHours: input.estimatedHours,
+        observation: input.observation,
+      },
+    });
+
+    return mapEstimation(estimation);
+  }
+
+  async findEstimationById(estimationId: string): Promise<TicketEstimationLookup | null> {
+    return prisma.ticketEstimation.findUnique({
+      where: { id: estimationId },
+      select: { id: true, ticketId: true, developerId: true, status: true },
+    });
+  }
+
+  async createEstimationDecision(input: CreateEstimationDecisionInput): Promise<TicketEstimationApproval> {
+    const approval = await prisma.ticketEstimationApproval.create({
+      data: {
+        ticketEstimationId: input.estimationId,
+        approvedById: input.approvedById,
+        decision: input.decision,
+        comment: input.comment,
+      },
+    });
+
+    return mapEstimationApproval(approval);
+  }
+
+  async updateEstimationStatus(input: { estimationId: string; status: "pending" | "approved" | "rejected" | "adjustment_requested" }): Promise<void> {
+    await prisma.ticketEstimation.update({
+      where: { id: input.estimationId },
+      data: { status: input.status },
     });
   }
 }

@@ -21,3 +21,18 @@ export const listTicketsQuerySchema = paginationQuerySchema.extend({
   statusId: z.uuid().optional(),
   billingOrigin: z.enum(["development", "support"]).optional(),
 });
+
+export const assignTicketSchema = z.object({
+  assignedToId: z.uuid(),
+  comment: z.string().min(1).optional(),
+});
+
+export const createTicketEstimationSchema = z.object({
+  estimatedHours: z.coerce.number().positive(),
+  observation: z.string().min(1).optional(),
+});
+
+export const decideTicketEstimationSchema = z.object({
+  decision: z.enum(["approved", "rejected", "adjustment_requested"]),
+  comment: z.string().min(1).optional(),
+});
