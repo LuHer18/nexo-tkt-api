@@ -51,6 +51,10 @@ Este directorio contiene el backend principal del proyecto Gestión TKT.
 - `POST /api/companies`
 - `GET /api/projects`
 - `POST /api/projects`
+- `GET /api/ticket-catalogs/types`
+- `GET /api/ticket-catalogs/statuses`
+- `GET /api/tickets`
+- `POST /api/tickets`
 
 ## Paginación
 Los endpoints de listado soportan:
