@@ -79,6 +79,11 @@ enum RefreshTokenStatus {
   consumed
 }
 
+enum TicketBillingOrigin {
+  development
+  support
+}
+
 model Role {
   id              String           @id @default(uuid()) @db.Uuid
   name            String           @unique @db.VarChar(50)
@@ -124,12 +129,14 @@ model User {
   projectsCreated     Project[]                    @relation("ProjectCreatedBy")
   ticketsCreated      Ticket[]                     @relation("TicketCreatedBy")
   ticketsAssigned     Ticket[]                     @relation("TicketAssignedTo")
+  ticketsConformed    Ticket[]                     @relation("TicketConformityApprovedBy")
   ticketAssignmentsBy TicketAssignment[]           @relation("TicketAssignedBy")
   ticketAssignmentsTo TicketAssignment[]           @relation("TicketAssignedToUser")
   estimations         TicketEstimation[]
   estimationApprovals TicketEstimationApproval[]
   worklogs            TicketWorklog[]
   iterationsOpened    TicketIteration[]
+  ticketConformities  TicketConformity[]
   comments            TicketComment[]
   attachments         TicketAttachment[]
   statusChanges       TicketStatusHistory[]
@@ -206,6 +213,10 @@ model Ticket {
   assignedToId      String?               @db.Uuid
   currentIteration  Int                   @default(1)
   parentTicketId    String?               @db.Uuid
+  conformityApprovedAt DateTime?
+  conformityApprovedById String?          @db.Uuid
+  billingOrigin     TicketBillingOrigin   @default(development)
+  originTicketId    String?               @db.Uuid
   company           Company               @relation(fields: [companyId], references: [id])
   project           Project               @relation(fields: [projectId], references: [id])
   ticketType        TicketType            @relation(fields: [ticketTypeId], references: [id])
@@ -214,10 +225,14 @@ model Ticket {
   assignedTo        User?                 @relation("TicketAssignedTo", fields: [assignedToId], references: [id])
   parentTicket      Ticket?               @relation("TicketParent", fields: [parentTicketId], references: [id])
   childTickets      Ticket[]              @relation("TicketParent")
+  conformityApprovedBy User?              @relation("TicketConformityApprovedBy", fields: [conformityApprovedById], references: [id])
+  originTicket      Ticket?               @relation("TicketOrigin", fields: [originTicketId], references: [id])
+  derivedSupportTickets Ticket[]          @relation("TicketOrigin")
   assignments       TicketAssignment[]
   estimations       TicketEstimation[]
   worklogs          TicketWorklog[]
   iterations        TicketIteration[]
+  conformities      TicketConformity[]
   comments          TicketComment[]
   attachments       TicketAttachment[]
   statusHistory     TicketStatusHistory[]
@@ -231,6 +246,7 @@ model Ticket {
   @@index([statusId])
   @@index([createdById])
   @@index([assignedToId])
+  @@index([originTicketId])
 }
 
 model TicketAssignment {
@@ -286,6 +302,8 @@ model TicketWorklog {
   solution      String?
   featuresAdded String?
   deployedToDev Boolean  @default(false)
+  countsTowardDevelopment Boolean @default(true)
+  billableAsSupport Boolean @default(false)
   ticket        Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   developer     User     @relation(fields: [developerId], references: [id])
   attachments   TicketAttachment[]
@@ -301,6 +319,7 @@ model TicketIteration {
   openedById      String          @db.Uuid
   reason          String
   status          IterationStatus @default(open)
+  countsTowardDevelopment Boolean @default(true)
   ticket          Ticket          @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   openedBy        User            @relation(fields: [openedById], references: [id])
   comments        TicketComment[]
@@ -378,6 +397,19 @@ model Notification {
 
   @@index([ticketId])
   @@index([userId])
+}
+
+model TicketConformity {
+  id           String   @id @default(uuid()) @db.Uuid
+  ticketId     String   @db.Uuid
+  approvedById String   @db.Uuid
+  comment      String?
+  approvedAt   DateTime @default(now())
+  ticket       Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  approvedBy   User     @relation(fields: [approvedById], references: [id])
+
+  @@index([ticketId])
+  @@index([approvedById])
 }
 
 model RefreshToken {
