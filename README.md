@@ -51,6 +51,10 @@ Este directorio contiene el backend principal del proyecto Gestión TKT.
 - `POST /api/companies`
 - `GET /api/projects`
 - `POST /api/projects`
+- `GET /api/ticket-catalogs/types`
+- `GET /api/ticket-catalogs/statuses`
+- `GET /api/tickets`
+- `POST /api/tickets`
 
 ## Paginación
 Los endpoints de listado soportan:
@@ -72,6 +76,12 @@ El orden por defecto en listados es `createdAt desc`.
 - Las fechas se almacenan en **UTC** en la base de datos.
 - Las respuestas del backend devuelven fechas en formato ISO estándar.
 - La conversión a hora local debe hacerse en el frontend según la zona horaria del usuario.
+
+## Regla de conformidad y soporte posterior
+- Un ticket de desarrollo no termina al desplegarse en dev.
+- El ticket solo se considera formalmente finalizado cuando queda **a conformidad**.
+- Las observaciones previas a conformidad deben seguir acumulando tiempo al desarrollo original.
+- Las incidencias posteriores a conformidad deben registrarse como soporte independiente relacionado al ticket origen.
 
 ## Seed inicial
 Se incluye un seed base con roles, permisos y un usuario demo:

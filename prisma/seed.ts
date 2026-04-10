@@ -66,6 +66,30 @@ const roles = [
   ["developer", "Desarrollador"],
 ] as const;
 
+const ticketTypes = [
+  ["new_dev", "Desarrollo nuevo", false, false, true],
+  ["observation_existing", "Observación o soporte sobre desarrollo existente", true, true, false],
+  ["observation_external", "Observación o soporte sin desarrollo previo del equipo", true, true, false],
+] as const;
+
+const ticketStatuses = [
+  ["new", "Nuevo"],
+  ["assigned", "Asignado"],
+  ["in_estimation", "En estimación"],
+  ["estimated", "Estimado"],
+  ["in_approval", "En aprobación"],
+  ["approved", "Aprobado"],
+  ["rejected", "Rechazado"],
+  ["in_progress", "En progreso"],
+  ["deployed_dev", "Desplegado en dev"],
+  ["observed", "Observado"],
+  ["in_adjustment", "En ajuste"],
+  ["validated", "Validado"],
+  ["conformity", "A conformidad"],
+  ["closed", "Cerrado"],
+  ["cancelled", "Cancelado"],
+] as const;
+
 async function main() {
   for (const [code, name] of permissions) {
     await prisma.permission.upsert({
@@ -85,6 +109,36 @@ async function main() {
       create: {
         name,
         description,
+      },
+    });
+  }
+
+  for (const [code, name, requiresDiagnosis, requiresSolution, requiresFeaturesLog] of ticketTypes) {
+    await prisma.ticketType.upsert({
+      where: { code },
+      update: {
+        name,
+        requiresDiagnosis,
+        requiresSolution,
+        requiresFeaturesLog,
+      },
+      create: {
+        code,
+        name,
+        requiresDiagnosis,
+        requiresSolution,
+        requiresFeaturesLog,
+      },
+    });
+  }
+
+  for (const [code, name] of ticketStatuses) {
+    await prisma.ticketStatus.upsert({
+      where: { code },
+      update: { name },
+      create: {
+        code,
+        name,
       },
     });
   }
